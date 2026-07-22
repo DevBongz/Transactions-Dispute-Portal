@@ -7,4 +7,4 @@ namespace DisputePortal.Api.Contracts.Ai;
 /// customer description; validated for presence and length before any Anthropic call.
 /// </summary>
 public sealed record ExtractDisputeRequest(
-    [property: Required] string Text);
+    [Required] string Text);

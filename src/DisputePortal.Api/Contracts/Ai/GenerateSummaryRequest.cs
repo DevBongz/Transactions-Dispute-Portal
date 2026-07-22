@@ -9,6 +9,6 @@ namespace DisputePortal.Api.Contracts.Ai;
 /// must be ≥ 20 chars (AC-OPS-04) before any Anthropic call.
 /// </summary>
 public sealed record GenerateSummaryRequest(
-    [property: Required] Guid DisputeId,
-    [property: Required] string Outcome,
-    [property: Required, MinLength(20)] string InternalNotes);
+    [Required] Guid DisputeId,
+    [Required] string Outcome,
+    [Required, MinLength(20)] string InternalNotes);

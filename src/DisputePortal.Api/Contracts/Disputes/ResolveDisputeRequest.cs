@@ -8,6 +8,6 @@ namespace DisputePortal.Api.Contracts.Disputes;
 /// must be ≥ 20 chars (AC-OPS-04); <paramref name="CustomerSummary"/> is optional (AI-generated).
 /// </summary>
 public sealed record ResolveDisputeRequest(
-    [property: Required] string Outcome,
-    [property: Required, MinLength(20)] string InternalNotes,
+    [Required] string Outcome,
+    [Required, MinLength(20)] string InternalNotes,
     string? CustomerSummary);
