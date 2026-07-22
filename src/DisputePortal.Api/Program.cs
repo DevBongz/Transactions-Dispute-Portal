@@ -2,6 +2,7 @@ using System.Text;
 using DisputePortal.Api.Data;
 using DisputePortal.Api.Domain;
 using DisputePortal.Api.Infrastructure.Auth;
+using DisputePortal.Api.Infrastructure.Exceptions;
 using DisputePortal.Api.Messaging;
 using DisputePortal.Api.Observability;
 using DisputePortal.Api.Repositories;
@@ -107,6 +108,11 @@ try
     builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
     builder.Services.AddScoped<ITransactionService, TransactionService>();
 
+    // ---- Disputes (TDP-DISP-01/02/03) ----
+    builder.Services.AddScoped<IDisputeRepository, DisputeRepository>();
+    builder.Services.AddScoped<IDisputeReferenceGenerator, DisputeReferenceGenerator>();
+    builder.Services.AddScoped<IDisputeService, DisputeService>();
+
     var app = builder.Build();
 
     // Swagger is enabled in Development and Docker environments (SPEC §3.6 Documentation).
@@ -144,6 +150,9 @@ try
     // ---- Middleware order (TDP-OBS-01 §2.3, TDP-AUTH-01 §2.5) ----
     // Correlation id first so it is present on request + auth-failure logs.
     app.UseMiddleware<CorrelationIdMiddleware>();
+    // Exception boundary next so AppExceptions from controllers map to 404/409/400
+    // (TDP-DISP-01 §2.6) while still being correlated and request-logged.
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseAppRequestLogging();
 
     app.UseCors("frontend");
