@@ -34,4 +34,17 @@ public interface IDisputeRepository
 
     /// <summary>Tracked dispute (with Resolution) for resolution; null if not found.</summary>
     Task<Dispute?> GetTrackedForResolveAsync(Guid id, CancellationToken ct);
+
+    /// <summary>
+    /// Tracked dispute with its <see cref="Transaction"/> and <see cref="Dispute.Events"/> for the
+    /// classification write path (TDP-AI-02); null if not found. Events are loaded so the consumer
+    /// can enforce idempotency against Kafka re-delivery.
+    /// </summary>
+    Task<Dispute?> GetTrackedForClassificationAsync(Guid id, CancellationToken ct);
+
+    /// <summary>
+    /// Count of the customer's disputes currently in <c>OPEN</c>/<c>UNDER_REVIEW</c>, excluding
+    /// <paramref name="excludeDisputeId"/> — feeds the "prior open disputes" priority rule (TDP-AI-02 §2.4).
+    /// </summary>
+    Task<int> CountOpenForCustomerAsync(Guid customerId, Guid excludeDisputeId, CancellationToken ct);
 }

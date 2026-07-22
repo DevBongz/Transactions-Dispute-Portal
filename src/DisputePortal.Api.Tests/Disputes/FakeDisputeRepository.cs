@@ -16,6 +16,9 @@ internal sealed class FakeDisputeRepository : IDisputeRepository
     public Transaction? OwnedTransaction { get; init; }
     public bool ExistsForTransaction { get; init; }
 
+    /// <summary>Dispute returned by <see cref="GetForDetailAsync"/> (used by AI-03 summary tests).</summary>
+    public Dispute? Detail { get; init; }
+
     public Task<Transaction?> GetOwnedTransactionAsync(Guid customerId, Guid transactionId, CancellationToken ct) =>
         Task.FromResult(OwnedTransaction);
 
@@ -30,7 +33,9 @@ internal sealed class FakeDisputeRepository : IDisputeRepository
         DisputeStatus? status, DisputePriority? priority, DisputeCategory? category, CancellationToken ct) =>
         throw new NotSupportedException();
 
-    public Task<Dispute?> GetForDetailAsync(Guid id, CancellationToken ct) => throw new NotSupportedException();
+    public Task<Dispute?> GetForDetailAsync(Guid id, CancellationToken ct) => Task.FromResult(Detail);
     public Task<Dispute?> GetTrackedAsync(Guid id, CancellationToken ct) => throw new NotSupportedException();
     public Task<Dispute?> GetTrackedForResolveAsync(Guid id, CancellationToken ct) => throw new NotSupportedException();
+    public Task<Dispute?> GetTrackedForClassificationAsync(Guid id, CancellationToken ct) => throw new NotSupportedException();
+    public Task<int> CountOpenForCustomerAsync(Guid customerId, Guid excludeDisputeId, CancellationToken ct) => throw new NotSupportedException();
 }

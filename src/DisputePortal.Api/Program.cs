@@ -1,4 +1,5 @@
 using System.Text;
+using DisputePortal.Api.BackgroundServices;
 using DisputePortal.Api.Data;
 using DisputePortal.Api.Domain;
 using DisputePortal.Api.Infrastructure.Auth;
@@ -7,9 +8,11 @@ using DisputePortal.Api.Messaging;
 using DisputePortal.Api.Observability;
 using DisputePortal.Api.Repositories;
 using DisputePortal.Api.Services;
+using DisputePortal.Api.Services.Ai;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -112,6 +115,27 @@ try
     builder.Services.AddScoped<IDisputeRepository, DisputeRepository>();
     builder.Services.AddScoped<IDisputeReferenceGenerator, DisputeReferenceGenerator>();
     builder.Services.AddScoped<IDisputeService, DisputeService>();
+
+    // ---- AI services (TDP-AI-01/02/03) ----
+    // Typed HttpClient for the Anthropic Messages API. The API key + version are pinned once
+    // as default headers so the key is never serialized per-request or logged (SPEC §3.6).
+    // Per-call timeouts are enforced inside the client via a linked CTS, so HttpClient.Timeout
+    // is left generous and the shared client can serve all three features' budgets.
+    builder.Services.Configure<AnthropicOptions>(builder.Configuration.GetSection("Anthropic"));
+    builder.Services.AddHttpClient<IAnthropicClient, AnthropicClient>((sp, http) =>
+    {
+        var opts = sp.GetRequiredService<IOptions<AnthropicOptions>>().Value;
+        http.BaseAddress = new Uri(opts.BaseUrl);
+        http.Timeout = Timeout.InfiniteTimeSpan; // per-call timeout is enforced by the client
+        http.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
+        http.DefaultRequestHeaders.Add("anthropic-version", opts.AnthropicVersion);
+    });
+    builder.Services.AddScoped<IDisputeExtractionService, DisputeExtractionService>();
+    builder.Services.AddScoped<IDisputeClassificationService, DisputeClassificationService>();
+    builder.Services.AddScoped<IResolutionSummaryService, ResolutionSummaryService>();
+
+    // Background triage: consumes dispute.submitted, classifies, publishes dispute.classified (TDP-AI-02).
+    builder.Services.AddHostedService<DisputeClassificationConsumer>();
 
     var app = builder.Build();
 

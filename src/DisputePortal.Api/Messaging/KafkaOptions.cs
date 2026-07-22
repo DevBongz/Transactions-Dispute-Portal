@@ -13,6 +13,17 @@ public sealed class KafkaOptions
     public KafkaTopics Topics { get; init; } = new();
     public string ProducerAcks { get; init; } = "All";
     public int MessageTimeoutMs { get; init; } = 5000;
+
+    // Consumer settings for the dispute-classification background service (TDP-AI-02 §2.2).
+    // A fixed GroupId lets multiple API instances share the partitions safely (SPEC §3.6
+    // Scalability). Auto-commit is off — the consumer commits only after a message is fully
+    // handled (at-least-once).
+    public string ConsumerGroupId { get; init; } = "dispute-classification";
+    public string AutoOffsetReset { get; init; } = "Earliest";
+
+    // Set false to disable the classification consumer (e.g. in integration tests that do not
+    // run a broker); the producer/topics wiring is unaffected.
+    public bool EnableClassificationConsumer { get; init; } = true;
 }
 
 /// <summary>Topic names for the three dispute lifecycle events (SPEC §3.4).</summary>

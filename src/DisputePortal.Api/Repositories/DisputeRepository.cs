@@ -91,4 +91,17 @@ public sealed class DisputeRepository(DisputePortalDbContext db) : IDisputeRepos
         db.Disputes
             .Include(d => d.Resolution)
             .FirstOrDefaultAsync(d => d.Id == id, ct);
+
+    public Task<Dispute?> GetTrackedForClassificationAsync(Guid id, CancellationToken ct) =>
+        db.Disputes
+            .Include(d => d.Transaction)
+            .Include(d => d.Events)
+            .FirstOrDefaultAsync(d => d.Id == id, ct);
+
+    public Task<int> CountOpenForCustomerAsync(Guid customerId, Guid excludeDisputeId, CancellationToken ct) =>
+        db.Disputes.AsNoTracking().CountAsync(
+            d => d.CustomerId == customerId
+                 && d.Id != excludeDisputeId
+                 && (d.Status == DisputeStatus.OPEN || d.Status == DisputeStatus.UNDER_REVIEW),
+            ct);
 }
