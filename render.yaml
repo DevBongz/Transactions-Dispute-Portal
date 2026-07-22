@@ -23,9 +23,10 @@ services:
     image:
       # Use Docker Hub — Render cannot fetch from docker.redpanda.com during Blueprint validation.
       url: docker.io/redpandadata/redpanda:v24.2.7
-    # Advertise the private hostname so API clients connect to dp-redpanda:9092.
+    # --mode is an rpk flag (not the redpanda C++ binary). Use rpk so Render's
+    # dockerCommand override still gets the correct CLI.
     dockerCommand: >-
-      redpanda start --mode dev-container --smp 1 --memory 512M --reserve-memory 0M
+      rpk redpanda start --mode dev-container --smp 1 --memory 512M
       --kafka-addr PLAINTEXT://0.0.0.0:9092
       --advertise-kafka-addr PLAINTEXT://dp-redpanda:9092
       --set redpanda.auto_create_topics_enabled=true
