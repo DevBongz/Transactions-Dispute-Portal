@@ -1,0 +1,8 @@
+{
+  "name": "dispute-portal-ui",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "echo \"scaffolded in TDP-FE-01\" && exit 0"
+  }
+}
