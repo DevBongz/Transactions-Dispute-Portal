@@ -62,7 +62,7 @@ services:
       - key: Gemini__ApiKey
         sync: false # paste your Google AI Studio key at Blueprint creation
       - key: Cors__AllowedOrigins__0
-        value: https://dp-ui.onrender.com # <-- update if the SPA name got a suffix
+        value: https://dp-ui.onrender.com # update if SPA name got a suffix (check dp-ui URL)
 
   # ---- React SPA (static site on CDN) ----
   - type: web
@@ -73,7 +73,8 @@ services:
     rootDir: src/dispute-portal-ui
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://dp-api.onrender.com/api/v1 # <-- update if the API name got a suffix
+        # Must match the live API hostname (this workspace got a suffix: dp-api-eebu).
+        value: https://dp-api-eebu.onrender.com/api/v1
     routes:
       - type: rewrite
         source: /*

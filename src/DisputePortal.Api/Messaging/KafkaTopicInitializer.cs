@@ -13,7 +13,7 @@ namespace DisputePortal.Api.Messaging;
 /// </summary>
 public sealed class KafkaTopicInitializer : IHostedService
 {
-    private const int MaxAttempts = 5;
+    private const int MaxAttempts = 20;
     private static readonly TimeSpan Backoff = TimeSpan.FromSeconds(3);
 
     private readonly KafkaOptions _opts;

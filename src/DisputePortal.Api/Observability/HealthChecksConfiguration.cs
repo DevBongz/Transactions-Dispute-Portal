@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DisputePortal.Api.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -14,9 +15,14 @@ public static class HealthChecksConfiguration
 {
     public static void AddAppHealthChecks(this WebApplicationBuilder builder)
     {
+        // Normalise managed-host postgres:// URLs the same way DbContext does — Npgsql
+        // health checks reject URI form with "Format of the initialization string…".
+        var connectionString = NpgsqlConnectionString.Normalize(
+            builder.Configuration.GetConnectionString("Default"))!;
+
         builder.Services.AddHealthChecks()
             .AddNpgSql(
-                builder.Configuration.GetConnectionString("Default")!,
+                connectionString,
                 name: "postgres",
                 tags: new[] { "ready" })
             .AddCheck<KafkaHealthCheck>(
