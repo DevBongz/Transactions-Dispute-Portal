@@ -17,6 +17,10 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Confluent.Kafka" Version="2.5.*" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.*" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.*" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.*" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.*" />
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.*" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.*" />
   </ItemGroup>
 

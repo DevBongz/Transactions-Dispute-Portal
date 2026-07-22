@@ -1,57 +1,156 @@
+using System.Text;
 using DisputePortal.Api.Data;
+using DisputePortal.Api.Domain;
+using DisputePortal.Api.Infrastructure.Auth;
+using DisputePortal.Api.Observability;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+// Two-stage Serilog init: a bootstrap logger captures startup failures before the
+// host is built; UseSerilog() then swaps in the configured pipeline (TDP-OBS-01 §2.2).
+SerilogConfiguration.CreateBootstrapLogger();
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// EF Core / Npgsql — connection string injected by compose (SPEC §3.1).
-builder.Services.AddDbContext<DisputePortalDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
-
-var app = builder.Build();
-
-// Swagger is enabled in Development and Docker environments (SPEC §3.6 Documentation).
-if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    var builder = WebApplication.CreateBuilder(args);
 
-// Run migrations + seed inside a scope, before serving traffic (TDP-DATA-02 §2.3).
-using (var scope = app.Services.CreateScope())
-{
-    var sp = scope.ServiceProvider;
-    var db = sp.GetRequiredService<DisputePortalDbContext>();
-    var logger = sp.GetRequiredService<ILogger<Program>>();
+    builder.AddSerilogLogging();
 
-    // MigrateAsync with a small retry loop (Postgres readiness).
-    for (var attempt = 1; ; attempt++)
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddHttpContextAccessor();
+
+    // Swagger with a Bearer security definition so protected endpoints can be
+    // exercised from the Swagger UI with a pasted token (TDP-AUTH-01 §4).
+    builder.Services.AddSwaggerGen(o =>
     {
-        try
+        var scheme = new OpenApiSecurityScheme
         {
-            await db.Database.MigrateAsync();
-            break;
-        }
-        catch (Exception ex) when (attempt < 10)
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Paste the JWT from POST /api/v1/auth/login (no 'Bearer ' prefix).",
+            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+        };
+        o.AddSecurityDefinition("Bearer", scheme);
+        o.AddSecurityRequirement(new OpenApiSecurityRequirement { [scheme] = Array.Empty<string>() });
+    });
+
+    // EF Core / Npgsql — connection string injected by compose (SPEC §3.1).
+    builder.Services.AddDbContext<DisputePortalDbContext>(opt =>
+        opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+
+    // ---- JWT auth (TDP-AUTH-01) ----
+    var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
+
+    // Fail fast on a missing/short secret so misconfiguration surfaces immediately
+    // (SPEC §4.3 mitigation; HMAC-SHA256 needs >= 32 bytes).
+    if (string.IsNullOrWhiteSpace(jwt.Secret) || Encoding.UTF8.GetByteCount(jwt.Secret) < 32)
+        throw new InvalidOperationException(
+            "Jwt:Secret must be set and at least 32 bytes. Set JWT_SECRET in .env (see .env.example).");
+
+    builder.Services.AddSingleton(jwt);
+    builder.Services.AddScoped<JwtTokenService>();
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
         {
-            logger.LogWarning(ex, "Migration attempt {Attempt} failed; retrying in 3s", attempt);
-            await Task.Delay(TimeSpan.FromSeconds(3));
-        }
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwt.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwt.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret)),
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromSeconds(30)   // tight skew so 60-min expiry is honoured
+            };
+        });
+
+    builder.Services.AddAuthorization(o =>
+    {
+        o.AddPolicy("Customer", p => p.RequireRole(nameof(UserRole.CUSTOMER)));
+        o.AddPolicy("Ops", p => p.RequireRole(nameof(UserRole.OPS_ANALYST), nameof(UserRole.OPS_MANAGER)));
+        o.AddPolicy("Manager", p => p.RequireRole(nameof(UserRole.OPS_MANAGER)));
+        // Global fallback: every endpoint requires auth unless it opts out with [AllowAnonymous].
+        o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    });
+
+    // ---- CORS locked to the frontend origin (SPEC §3.6) ----
+    var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                  ?? new[] { "http://localhost:3000" };
+    builder.Services.AddCors(o => o.AddPolicy("frontend", p =>
+        p.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod()));
+
+    // ---- Observability (TDP-OBS-01) ----
+    builder.Services.AddScoped<ICorrelationAccessor, HttpCorrelationAccessor>();
+    builder.AddAppHealthChecks();
+
+    var app = builder.Build();
+
+    // Swagger is enabled in Development and Docker environments (SPEC §3.6 Documentation).
+    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
 
-    await DatabaseSeeder.SeedAsync(db, logger);
+    // Run migrations + seed inside a scope, before serving traffic (TDP-DATA-02 §2.3).
+    using (var scope = app.Services.CreateScope())
+    {
+        var sp = scope.ServiceProvider;
+        var db = sp.GetRequiredService<DisputePortalDbContext>();
+        var logger = sp.GetRequiredService<ILogger<Program>>();
+
+        // MigrateAsync with a small retry loop (Postgres readiness).
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await db.Database.MigrateAsync();
+                break;
+            }
+            catch (Exception ex) when (attempt < 10)
+            {
+                logger.LogWarning(ex, "Migration attempt {Attempt} failed; retrying in 3s", attempt);
+                await Task.Delay(TimeSpan.FromSeconds(3));
+            }
+        }
+
+        await DatabaseSeeder.SeedAsync(db, logger);
+    }
+
+    // ---- Middleware order (TDP-OBS-01 §2.3, TDP-AUTH-01 §2.5) ----
+    // Correlation id first so it is present on request + auth-failure logs.
+    app.UseMiddleware<CorrelationIdMiddleware>();
+    app.UseAppRequestLogging();
+
+    app.UseCors("frontend");
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    // Health endpoints are public (no JWT) so probes work without auth.
+    app.MapAppHealthChecks();
+    app.MapControllers();
+
+    app.Run();
 }
-
-// Minimal health endpoints so the compose healthcheck (TDP-INFRA-02) can probe the
-// container. Full observability/health wiring is owned by TDP-OBS-01.
-app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
-app.MapGet("/health/ready", () => Results.Ok(new { status = "ready" }));
-
-app.MapControllers();
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "DisputePortal.Api terminated unexpectedly during startup.");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // Exposed for WebApplicationFactory<Program> integration tests (TDP-TEST-01).
 public partial class Program { }
