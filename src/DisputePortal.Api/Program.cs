@@ -129,10 +129,14 @@ try
     builder.Services.AddHttpClient<IAnthropicClient, GeminiClient>((sp, http) =>
     {
         var opts = sp.GetRequiredService<IOptions<GeminiOptions>>().Value;
-        http.BaseAddress = new Uri(opts.BaseUrl);
+        http.BaseAddress = new Uri(opts.BaseUrl.TrimEnd('/') + "/");
         http.Timeout = Timeout.InfiniteTimeSpan; // per-call timeout is enforced by the client
-        http.DefaultRequestHeaders.TryAddWithoutValidation("x-goog-api-key", opts.ApiKey);
+        // API key is attached per-request as ?key= (see GeminiClient) — not as a default header.
     });
+    if (string.IsNullOrWhiteSpace(builder.Configuration["Gemini:ApiKey"]))
+    {
+        Log.Warning("Gemini:ApiKey is not set — AI extract/classify/summary will return 502 until configured.");
+    }
     builder.Services.AddScoped<IDisputeExtractionService, DisputeExtractionService>();
     builder.Services.AddScoped<IDisputeClassificationService, DisputeClassificationService>();
     builder.Services.AddScoped<IResolutionSummaryService, ResolutionSummaryService>();

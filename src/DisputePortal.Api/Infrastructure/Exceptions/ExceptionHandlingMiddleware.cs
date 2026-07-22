@@ -1,5 +1,7 @@
 using System.Text.Json;
+using DisputePortal.Api.Services.Ai;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace DisputePortal.Api.Infrastructure.Exceptions;
 
@@ -28,6 +30,14 @@ public sealed class ExceptionHandlingMiddleware(
                 "Request {Method} {Path} rejected: {Status} {Title} — {Detail}",
                 context.Request.Method, context.Request.Path, ex.StatusCode, ex.Title, ex.Message);
             await WriteProblemAsync(context, ex.StatusCode, ex.Title, ex.Message);
+        }
+        catch (AnthropicException ex)
+        {
+            // Defence in depth if a controller forgets to map LLM failures to 502.
+            logger.LogWarning(ex, "LLM call failed for {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+            await WriteProblemAsync(context, StatusCodes.Status502BadGateway,
+                "Bad Gateway", "AI service temporarily unavailable.");
         }
         catch (Exception ex)
         {

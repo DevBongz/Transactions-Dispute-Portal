@@ -3,33 +3,53 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 
 namespace DisputePortal.Api.Services.Ai;
 
 /// <summary>
 /// Google Gemini <c>generateContent</c> implementation of <see cref="IAnthropicClient"/>.
 /// The interface name is historical (Batch 5 used Anthropic); the contract is a single
-/// non-streaming text completion. The API key is set as <c>x-goog-api-key</c> on the
-/// shared <see cref="HttpClient"/> in <c>Program.cs</c> and is never logged.
+/// non-streaming text completion. The API key is sent as a query parameter (never logged).
+/// All failures are wrapped in <see cref="AnthropicException"/> so callers map to HTTP 502.
 /// </summary>
-public sealed class GeminiClient(HttpClient http, ILogger<GeminiClient> logger) : IAnthropicClient
+public sealed class GeminiClient(
+    HttpClient http,
+    IOptions<GeminiOptions> options,
+    ILogger<GeminiClient> logger) : IAnthropicClient
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
+    private readonly string _apiKey = (options.Value.ApiKey ?? string.Empty).Trim();
+
     public async Task<string> CompleteAsync(AnthropicCompletion request, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(_apiKey))
+            throw new AnthropicException("Gemini API key is not configured.", transient: false);
+
+        // Include the system prompt in the user turn as well — more reliable across model revisions.
+        var userText = string.IsNullOrWhiteSpace(request.System)
+            ? request.UserMessage
+            : $"{request.System}\n\n---\n\n{request.UserMessage}";
+
         var body = new GenerateContentRequest(
-            SystemInstruction: new ContentDto([new PartDto(request.System)]),
-            Contents: [new ContentDto([new PartDto(request.UserMessage)], Role: "user")],
+            SystemInstruction: string.IsNullOrWhiteSpace(request.System)
+                ? null
+                : new ContentDto([new PartDto(request.System)]),
+            Contents: [new ContentDto([new PartDto(userText)], Role: "user")],
             GenerationConfig: new GenerationConfigDto(request.MaxTokens));
 
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(request.Timeout);
 
-        var path = $"/v1beta/models/{Uri.EscapeDataString(request.Model)}:generateContent";
+        // Key as query param avoids header-validation failures on keys with whitespace/newlines.
+        var path =
+            $"/v1beta/models/{Uri.EscapeDataString(request.Model)}:generateContent" +
+            $"?key={Uri.EscapeDataString(_apiKey)}";
+
         var started = Stopwatch.GetTimestamp();
         HttpResponseMessage response;
         try
@@ -42,7 +62,7 @@ public sealed class GeminiClient(HttpClient http, ILogger<GeminiClient> logger) 
                 request.Timeout.TotalMilliseconds, request.Model);
             throw new AnthropicException("Gemini request timed out.", transient: true);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Gemini request failed at the transport layer (model {Model})", request.Model);
             throw new AnthropicException("Gemini request failed.", transient: true, inner: ex);
@@ -59,7 +79,8 @@ public sealed class GeminiClient(HttpClient http, ILogger<GeminiClient> logger) 
                 logger.LogWarning(
                     "Gemini returned {StatusCode} for model {Model} in {ElapsedMs:0}ms (transient={Transient})",
                     (int)response.StatusCode, request.Model, elapsedMs, transient);
-                throw new AnthropicException($"Gemini responded with status {(int)response.StatusCode}.", transient);
+                throw new AnthropicException(
+                    $"Gemini responded with status {(int)response.StatusCode}.", transient);
             }
 
             GenerateContentResponse? parsed;
@@ -67,7 +88,7 @@ public sealed class GeminiClient(HttpClient http, ILogger<GeminiClient> logger) 
             {
                 parsed = await response.Content.ReadFromJsonAsync<GenerateContentResponse>(Json, ct);
             }
-            catch (JsonException ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogWarning(ex, "Gemini response envelope was not valid JSON (model {Model})", request.Model);
                 throw new AnthropicException("Gemini response could not be parsed.", inner: ex);
@@ -80,8 +101,14 @@ public sealed class GeminiClient(HttpClient http, ILogger<GeminiClient> logger) 
 
             if (string.IsNullOrWhiteSpace(text))
             {
-                logger.LogWarning("Gemini response contained no text (model {Model})", request.Model);
-                throw new AnthropicException("Gemini response contained no text.");
+                var block = parsed?.PromptFeedback?.BlockReason;
+                logger.LogWarning(
+                    "Gemini response contained no text (model {Model}, blockReason {BlockReason})",
+                    request.Model, block ?? "-");
+                throw new AnthropicException(
+                    string.IsNullOrEmpty(block)
+                        ? "Gemini response contained no text."
+                        : $"Gemini blocked the prompt ({block}).");
             }
 
             logger.LogInformation(
@@ -93,7 +120,7 @@ public sealed class GeminiClient(HttpClient http, ILogger<GeminiClient> logger) 
     }
 
     private sealed record GenerateContentRequest(
-        [property: JsonPropertyName("systemInstruction")] ContentDto SystemInstruction,
+        [property: JsonPropertyName("systemInstruction")] ContentDto? SystemInstruction,
         [property: JsonPropertyName("contents")] IReadOnlyList<ContentDto> Contents,
         [property: JsonPropertyName("generationConfig")] GenerationConfigDto GenerationConfig);
 
@@ -108,8 +135,12 @@ public sealed class GeminiClient(HttpClient http, ILogger<GeminiClient> logger) 
         [property: JsonPropertyName("text")] string Text);
 
     private sealed record GenerateContentResponse(
-        [property: JsonPropertyName("candidates")] IReadOnlyList<CandidateDto>? Candidates);
+        [property: JsonPropertyName("candidates")] IReadOnlyList<CandidateDto>? Candidates,
+        [property: JsonPropertyName("promptFeedback")] PromptFeedbackDto? PromptFeedback);
 
     private sealed record CandidateDto(
         [property: JsonPropertyName("content")] ContentDto? Content);
+
+    private sealed record PromptFeedbackDto(
+        [property: JsonPropertyName("blockReason")] string? BlockReason);
 }
