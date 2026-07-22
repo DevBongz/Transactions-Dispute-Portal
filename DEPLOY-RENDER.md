@@ -81,8 +81,9 @@ Optional AI overrides (set on `dp-api` if a model id is unavailable): `Gemini__E
 - **API unhealthy / DB errors:** confirm `dp-postgres` is in the **same region** (`oregon`) as
   `dp-api`; the connection string is wired automatically via the Blueprint.
 - **Disputes fail on submit/resolve (500):** the API can't reach Kafka. Check `dp-redpanda` is
-  live and that `Kafka__BootstrapServers` is exactly `dp-redpanda:9092`. If `dp-redpanda` keeps
-  restarting/OOMs on 512 MB, bump its plan to **standard**.
+  live and that `Kafka__BootstrapServers` is exactly `dp-redpanda:9092`. If logs show
+  `insufficient physical memory`, lower `--memory` (Starter has ~500 MB usable; use `400M`)
+  or bump the plan to **standard**.
 - **Category/priority stuck on "Pending":** the classification consumer isn't consuming — same
   Kafka connectivity check as above.
 - **AI calls return 502:** check `Gemini__ApiKey` is set; if the model id is unavailable, set the
