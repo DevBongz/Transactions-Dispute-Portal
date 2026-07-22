@@ -62,7 +62,7 @@ services:
       - key: Gemini__ApiKey
         sync: false # paste your Google AI Studio key at Blueprint creation
       - key: Cors__AllowedOrigins__0
-        value: https://dp-ui.onrender.com # update if SPA name got a suffix (check dp-ui URL)
+        value: https://dp-ui-5rd4.onrender.com
 
   # ---- React SPA (static site on CDN) ----
   - type: web
