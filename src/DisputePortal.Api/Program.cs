@@ -2,6 +2,7 @@ using System.Text;
 using DisputePortal.Api.BackgroundServices;
 using DisputePortal.Api.Data;
 using DisputePortal.Api.Domain;
+using DisputePortal.Api.Infrastructure;
 using DisputePortal.Api.Infrastructure.Auth;
 using DisputePortal.Api.Infrastructure.Exceptions;
 using DisputePortal.Api.Messaging;
@@ -49,9 +50,10 @@ try
         o.AddSecurityRequirement(new OpenApiSecurityRequirement { [scheme] = Array.Empty<string>() });
     });
 
-    // EF Core / Npgsql — connection string injected by compose (SPEC §3.1).
+    // EF Core / Npgsql — connection string injected by compose (SPEC §3.1). Normalised so a
+    // managed-host postgres:// URL (Render/Railway/Heroku) is accepted as well as key-value form.
     builder.Services.AddDbContext<DisputePortalDbContext>(opt =>
-        opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+        opt.UseNpgsql(NpgsqlConnectionString.Normalize(builder.Configuration.GetConnectionString("Default"))));
 
     // ---- JWT auth (TDP-AUTH-01) ----
     var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;

@@ -1,0 +1,79 @@
+# Render Blueprint for the Transactions Dispute Portal (Option B — full fidelity).
+# Creates: managed Postgres, a single-node Redpanda (Kafka) private service, the .NET API
+# (Docker), and the React SPA (static site). See DEPLOY-RENDER.md for the full runbook.
+#
+# NOTE ON SERVICE NAMES: Render assigns each web service a URL based on its name
+# (e.g. https://dp-api.onrender.com). If a name is already taken in your workspace, Render
+# appends a random suffix — in that case update the two cross-referencing URLs flagged below.
+
+databases:
+  - name: dp-postgres
+    databaseName: disputeportal
+    user: dp_user
+    plan: free # demo tier; expires after ~30 days — bump to basic-256mb for longevity
+    region: oregon
+
+services:
+  # ---- Redpanda: Kafka-compatible broker (private service) ----
+  - type: pserv
+    name: dp-redpanda
+    runtime: image
+    plan: starter # bump to standard if it OOMs on 512 MB
+    region: oregon
+    image:
+      url: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    # Advertise the private hostname so API clients connect to dp-redpanda:9092.
+    dockerCommand: >-
+      redpanda start --mode dev-container --smp 1 --memory 512M --reserve-memory 0M
+      --kafka-addr PLAINTEXT://0.0.0.0:9092
+      --advertise-kafka-addr PLAINTEXT://dp-redpanda:9092
+      --set redpanda.auto_create_topics_enabled=true
+    envVars:
+      - key: PORT # pin the port Render exposes on the private network to the Kafka listener
+        value: 9092
+    disk:
+      name: redpanda-data
+      mountPath: /var/lib/redpanda/data
+      sizeGB: 1
+
+  # ---- .NET 8 API (Docker) ----
+  - type: web
+    name: dp-api
+    runtime: docker
+    plan: starter # avoid free-tier cold starts during a live demo
+    region: oregon
+    rootDir: src/DisputePortal.Api
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/ready
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Docker # enables Swagger UI at /swagger
+      - key: PORT
+        value: 8080 # the image binds ASPNETCORE_URLS=http://+:8080
+      - key: ConnectionStrings__Default
+        fromDatabase:
+          name: dp-postgres
+          property: connectionString # postgres:// URL — normalised at startup
+      - key: Kafka__BootstrapServers
+        value: dp-redpanda:9092
+      - key: Jwt__Secret
+        generateValue: true # random 256-bit value (>= 32 bytes)
+      - key: Anthropic__ApiKey
+        sync: false # paste your sk-ant-... key at Blueprint creation
+      - key: Cors__AllowedOrigins__0
+        value: https://dp-ui.onrender.com # <-- update if the SPA name got a suffix
+
+  # ---- React SPA (static site on CDN) ----
+  - type: web
+    name: dp-ui
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    rootDir: src/dispute-portal-ui
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://dp-api.onrender.com/api/v1 # <-- update if the API name got a suffix
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
