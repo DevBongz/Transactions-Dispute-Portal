@@ -10,7 +10,7 @@ namespace DisputePortal.Api.Controllers;
 /// <summary>
 /// AI-assist endpoints (TDP-AI-01 / TDP-AI-03, SPEC §3.3). Extraction is available to any
 /// authenticated user (primarily customers); summary generation is ops-only. Both are pure
-/// assist calls — no persistence here. An Anthropic failure/timeout surfaces as <c>502</c>
+/// assist calls — no persistence here. A Gemini failure/timeout surfaces as <c>502</c>
 /// with a generic body so the caller can fall back to manual entry (the API key is never
 /// echoed or logged, SPEC §3.6).
 /// </summary>
@@ -21,9 +21,9 @@ namespace DisputePortal.Api.Controllers;
 public sealed class AiController(
     IDisputeExtractionService extraction,
     IResolutionSummaryService summary,
-    IOptions<AnthropicOptions> options) : ControllerBase
+    IOptions<GeminiOptions> options) : ControllerBase
 {
-    private readonly AnthropicOptions _opts = options.Value;
+    private readonly GeminiOptions _opts = options.Value;
 
     /// <summary>Extract structured dispute fields from a free-text description (TDP-AI-01).</summary>
     [HttpPost("extract-dispute")]

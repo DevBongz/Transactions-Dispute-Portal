@@ -25,14 +25,14 @@ namespace DisputePortal.Api.BackgroundServices;
 public sealed class DisputeClassificationConsumer(
     IServiceScopeFactory scopeFactory,
     IOptions<KafkaOptions> options,
-    IOptions<AnthropicOptions> anthropicOptions,
+    IOptions<GeminiOptions> geminiOptions,
     ILogger<DisputeClassificationConsumer> logger) : BackgroundService
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan Backoff = TimeSpan.FromSeconds(5);
 
     private readonly KafkaOptions _opts = options.Value;
-    private readonly string _classificationModel = anthropicOptions.Value.ClassificationModel;
+    private readonly string _classificationModel = geminiOptions.Value.ClassificationModel;
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {

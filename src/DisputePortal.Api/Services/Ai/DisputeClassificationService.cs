@@ -17,12 +17,12 @@ namespace DisputePortal.Api.Services.Ai;
 /// </summary>
 public sealed class DisputeClassificationService(
     IAnthropicClient client,
-    IOptions<AnthropicOptions> options,
+    IOptions<GeminiOptions> options,
     ILogger<DisputeClassificationService> logger) : IDisputeClassificationService
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    private readonly AnthropicOptions _opts = options.Value;
+    private readonly GeminiOptions _opts = options.Value;
 
     public async Task<ClassificationResult> ClassifyAsync(ClassificationContext context, CancellationToken ct)
     {
@@ -41,7 +41,7 @@ public sealed class DisputeClassificationService(
         catch (AnthropicException ex)
         {
             logger.LogWarning("Classification upstream call failed: {Reason}", ex.Message);
-            return ClassificationResult.Failed($"anthropic_error: {ex.Message}");
+            return ClassificationResult.Failed($"llm_error: {ex.Message}");
         }
 
         var json = ModelJson.ExtractFirstObject(raw);
@@ -81,7 +81,7 @@ public sealed class DisputeClassificationService(
         }
         catch (AnthropicException ex) when (ex.Transient && !ct.IsCancellationRequested)
         {
-            logger.LogInformation("Transient Anthropic error on classification; retrying once.");
+            logger.LogInformation("Transient Gemini error on classification; retrying once.");
             return await client.CompleteAsync(completion, ct);
         }
     }

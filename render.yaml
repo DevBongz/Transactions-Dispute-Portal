@@ -59,8 +59,8 @@ services:
         value: dp-redpanda:9092
       - key: Jwt__Secret
         generateValue: true # random 256-bit value (>= 32 bytes)
-      - key: Anthropic__ApiKey
-        sync: false # paste your sk-ant-... key at Blueprint creation
+      - key: Gemini__ApiKey
+        sync: false # paste your Google AI Studio key at Blueprint creation
       - key: Cors__AllowedOrigins__0
         value: https://dp-ui.onrender.com # <-- update if the SPA name got a suffix
 

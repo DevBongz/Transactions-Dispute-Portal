@@ -15,7 +15,7 @@ namespace DisputePortal.Api.Tests.Ai;
 public sealed class DisputeClassificationServiceTests
 {
     private static DisputeClassificationService ServiceWith(FakeAnthropicClient client) =>
-        new(client, Options.Create(new AnthropicOptions()),
+        new(client, Options.Create(new GeminiOptions()),
             NullLogger<DisputeClassificationService>.Instance);
 
     private static ClassificationContext Context() =>
@@ -58,7 +58,7 @@ public sealed class DisputeClassificationServiceTests
         var result = await service.ClassifyAsync(Context(), CancellationToken.None);
 
         Assert.False(result.Success);
-        Assert.Contains("anthropic_error", result.FailureReason);
+        Assert.Contains("llm_error", result.FailureReason);
         Assert.Equal(1, client.Calls); // non-transient → no retry
     }
 

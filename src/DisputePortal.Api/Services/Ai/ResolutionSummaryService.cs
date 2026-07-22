@@ -18,9 +18,9 @@ namespace DisputePortal.Api.Services.Ai;
 public sealed class ResolutionSummaryService(
     IAnthropicClient client,
     IDisputeRepository repository,
-    IOptions<AnthropicOptions> options) : IResolutionSummaryService
+    IOptions<GeminiOptions> options) : IResolutionSummaryService
 {
-    private readonly AnthropicOptions _opts = options.Value;
+    private readonly GeminiOptions _opts = options.Value;
 
     public async Task<GenerateSummaryResponse> GenerateAsync(GenerateSummaryRequest request, CancellationToken ct)
     {

@@ -12,7 +12,7 @@ namespace DisputePortal.Api.Tests.Ai;
 public sealed class DisputeExtractionServiceTests
 {
     private static DisputeExtractionService ServiceWith(FakeAnthropicClient client) =>
-        new(client, Options.Create(new AnthropicOptions()));
+        new(client, Options.Create(new GeminiOptions()));
 
     [Fact]
     public async Task Parses_fields_and_populates_confidence_for_every_field()

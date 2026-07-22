@@ -9,7 +9,7 @@ Everything is defined in [`render.yaml`](./render.yaml) so most of the wiring is
 ## Prerequisites
 
 - The repo is on GitHub (done) and connected to your Render account.
-- An **Anthropic API key** with credit (`sk-ant-…`).
+- A free **Google Gemini API key** from [Google AI Studio](https://aistudio.google.com/apikey).
 - A Render workspace. For a smooth live demo, paid **Starter** instances are used in the
   Blueprint (free web services cold-start ~30–60 s; free Postgres expires ~30 days).
 
@@ -17,7 +17,7 @@ Everything is defined in [`render.yaml`](./render.yaml) so most of the wiring is
 
 1. Render Dashboard → **New → Blueprint**.
 2. Select this repository and branch `main`. Render reads `render.yaml`.
-3. When prompted for `sync: false` values, paste your **`Anthropic__ApiKey`**.
+3. When prompted for `sync: false` values, paste your **`Gemini__ApiKey`**.
 4. Click **Apply**. Render creates: `dp-postgres`, `dp-redpanda`, `dp-api`, `dp-ui`.
 
 On first boot the API automatically runs EF migrations and seeds demo data.
@@ -67,12 +67,12 @@ to see the resolution; log in as Zanele for the metrics.
 | `ConnectionStrings__Default` | api | auto from `dp-postgres` (URL, normalised at startup) |
 | `Kafka__BootstrapServers` | api | `dp-redpanda:9092` |
 | `Jwt__Secret` | api | auto-generated |
-| `Anthropic__ApiKey` | api | your key (prompted) |
+| `Gemini__ApiKey` | api | your Google AI Studio key (prompted) |
 | `Cors__AllowedOrigins__0` | api | SPA URL |
 | `VITE_API_BASE_URL` | ui | `https://<api>.onrender.com/api/v1` |
 
-Optional AI overrides (set on `dp-api` if your account can't call the defaults): `Anthropic__ExtractionModel`,
-`Anthropic__ClassificationModel`, `Anthropic__SummaryModel`.
+Optional AI overrides (set on `dp-api` if a model id is unavailable): `Gemini__ExtractionModel`,
+`Gemini__ClassificationModel`, `Gemini__SummaryModel` (default: `gemini-2.0-flash`).
 
 ## Troubleshooting
 
@@ -85,7 +85,7 @@ Optional AI overrides (set on `dp-api` if your account can't call the defaults):
   restarting/OOMs on 512 MB, bump its plan to **standard**.
 - **Category/priority stuck on "Pending":** the classification consumer isn't consuming — same
   Kafka connectivity check as above.
-- **AI calls return 502:** the configured Claude model isn't available to your key — set the
-  `Anthropic__*Model` overrides above.
+- **AI calls return 502:** check `Gemini__ApiKey` is set; if the model id is unavailable, set the
+  `Gemini__*Model` overrides above (try `gemini-1.5-flash` or `gemini-2.5-flash`).
 - **SPA loads but API calls fail (CORS/404):** re-check step 2 (the two URLs) and redeploy the
   SPA after changing `VITE_API_BASE_URL`.

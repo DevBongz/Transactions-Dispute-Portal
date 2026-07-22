@@ -81,7 +81,7 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       ConnectionStrings__Default: "Host=postgres;Database=disputeportal;Username=dp_user;Password=dp_pass"
       Kafka__BootstrapServers: "kafka:29092"
-      Anthropic__ApiKey: "${ANTHROPIC_API_KEY}"
+      Gemini__ApiKey: "${GEMINI_API_KEY}"
       Jwt__Secret: "${JWT_SECRET}"
       Cors__AllowedOrigins__0: "http://localhost:3000"
     healthcheck:

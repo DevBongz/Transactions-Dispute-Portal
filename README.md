@@ -12,7 +12,7 @@ Merchant Commerce) financial motion.
 ## Quick start (once tooling is installed)
 
 ```bash
-cp .env.example .env    # fill in ANTHROPIC_API_KEY and JWT_SECRET
+cp .env.example .env    # fill in GEMINI_API_KEY and JWT_SECRET
 docker compose up --build
 ```
 

@@ -14,7 +14,7 @@ namespace DisputePortal.Api.Services.Ai;
 /// confidence map is normalized so every field name carries a numeric entry for the UI.
 /// </summary>
 public sealed class DisputeExtractionService(
-    IAnthropicClient client, IOptions<AnthropicOptions> options) : IDisputeExtractionService
+    IAnthropicClient client, IOptions<GeminiOptions> options) : IDisputeExtractionService
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -22,7 +22,7 @@ public sealed class DisputeExtractionService(
     private static readonly string[] FieldNames =
         ["transactionRef", "category", "amount", "merchantName", "transactionDate"];
 
-    private readonly AnthropicOptions _opts = options.Value;
+    private readonly GeminiOptions _opts = options.Value;
 
     public async Task<ExtractDisputeResponse> ExtractAsync(string text, CancellationToken ct)
     {

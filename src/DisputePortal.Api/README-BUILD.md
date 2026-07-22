@@ -44,7 +44,7 @@ Commit the generated files under `src/DisputePortal.Api/Migrations/`.
 ## 3. Bring the stack up and verify
 
 ```bash
-cp .env.example .env      # then edit: set a real ANTHROPIC_API_KEY and a >=32-char JWT_SECRET
+cp .env.example .env      # then edit: set a real GEMINI_API_KEY and a >=32-char JWT_SECRET
 docker compose up --build
 ```
 

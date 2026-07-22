@@ -18,7 +18,7 @@ public sealed class ResolutionSummaryServiceTests
     private const string ValidNotes = "Transaction confirmed as duplicate — refund initiated.";
 
     private static ResolutionSummaryService ServiceWith(FakeAnthropicClient client, FakeDisputeRepository repo) =>
-        new(client, repo, Options.Create(new AnthropicOptions()));
+        new(client, repo, Options.Create(new GeminiOptions()));
 
     private static Dispute DisputeWithTransaction() => new()
     {

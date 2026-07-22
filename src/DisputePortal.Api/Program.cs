@@ -121,19 +121,17 @@ try
     // ---- Ops dashboard metrics (OPS-06) ----
     builder.Services.AddScoped<IDashboardService, DashboardService>();
 
-    // ---- AI services (TDP-AI-01/02/03) ----
-    // Typed HttpClient for the Anthropic Messages API. The API key + version are pinned once
-    // as default headers so the key is never serialized per-request or logged (SPEC §3.6).
-    // Per-call timeouts are enforced inside the client via a linked CTS, so HttpClient.Timeout
-    // is left generous and the shared client can serve all three features' budgets.
-    builder.Services.Configure<AnthropicOptions>(builder.Configuration.GetSection("Anthropic"));
-    builder.Services.AddHttpClient<IAnthropicClient, AnthropicClient>((sp, http) =>
+    // ---- AI services (TDP-AI-01/02/03) — Google Gemini ----
+    // Typed HttpClient for Gemini generateContent. The API key is pinned once as
+    // x-goog-api-key so it is never serialized per-request or logged (SPEC §3.6).
+    // Per-call timeouts are enforced inside the client via a linked CTS.
+    builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection("Gemini"));
+    builder.Services.AddHttpClient<IAnthropicClient, GeminiClient>((sp, http) =>
     {
-        var opts = sp.GetRequiredService<IOptions<AnthropicOptions>>().Value;
+        var opts = sp.GetRequiredService<IOptions<GeminiOptions>>().Value;
         http.BaseAddress = new Uri(opts.BaseUrl);
         http.Timeout = Timeout.InfiniteTimeSpan; // per-call timeout is enforced by the client
-        http.DefaultRequestHeaders.Add("x-api-key", opts.ApiKey);
-        http.DefaultRequestHeaders.Add("anthropic-version", opts.AnthropicVersion);
+        http.DefaultRequestHeaders.TryAddWithoutValidation("x-goog-api-key", opts.ApiKey);
     });
     builder.Services.AddScoped<IDisputeExtractionService, DisputeExtractionService>();
     builder.Services.AddScoped<IDisputeClassificationService, DisputeClassificationService>();
