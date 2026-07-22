@@ -177,6 +177,9 @@ public sealed class DisputeService(
             dispute.CustomerDescription,
             ParseJson(dispute.ExtractedFieldsJson),
             dispute.AssignedToId,
+            dispute.CustomerId,
+            dispute.Customer.FullName,
+            dispute.Customer.Email,
             transaction,
             resolution,
             timeline);

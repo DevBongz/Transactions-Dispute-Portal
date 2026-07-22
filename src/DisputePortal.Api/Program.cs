@@ -116,6 +116,9 @@ try
     builder.Services.AddScoped<IDisputeReferenceGenerator, DisputeReferenceGenerator>();
     builder.Services.AddScoped<IDisputeService, DisputeService>();
 
+    // ---- Ops dashboard metrics (OPS-06) ----
+    builder.Services.AddScoped<IDashboardService, DashboardService>();
+
     // ---- AI services (TDP-AI-01/02/03) ----
     // Typed HttpClient for the Anthropic Messages API. The API key + version are pinned once
     // as default headers so the key is never serialized per-request or logged (SPEC §3.6).

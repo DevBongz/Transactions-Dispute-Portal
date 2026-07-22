@@ -16,6 +16,9 @@ public sealed record DisputeDetailDto(
     string CustomerDescription,
     JsonElement? ExtractedFields,
     Guid? AssignedToId,
+    Guid CustomerId,
+    string CustomerName,
+    string CustomerEmail,
     TransactionDto Transaction,
     ResolutionDto? Resolution,
     IReadOnlyList<DisputeEventDto> Timeline);

@@ -77,6 +77,7 @@ public sealed class DisputeRepository(DisputePortalDbContext db) : IDisputeRepos
 
     public Task<Dispute?> GetForDetailAsync(Guid id, CancellationToken ct) =>
         db.Disputes.AsNoTracking()
+            .Include(d => d.Customer)
             .Include(d => d.Transaction)
             .Include(d => d.Resolution)
             .Include(d => d.Events).ThenInclude(e => e.Actor)

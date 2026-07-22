@@ -80,6 +80,17 @@ Intended to be sorted out separately (e.g. with another LLM or the team).
 | 3 | [TDP-FE-04](TDP-FE-04.md) | **`CLASSIFICATION_FAILED` customer-facing display.** FE-04 maps the internal `CLASSIFICATION_FAILED` status to "Under Review" in the customer view only (ops still see the real status). Confirm this is the desired customer-facing behaviour. | (a) Show "Under Review" to customers (current). (b) Show a distinct customer-facing state. |
 | 4 | [TDP-TEST-01](TDP-TEST-01.md), [TDP-DOC-02](TDP-DOC-02.md) | **Placeholder names to reconcile.** Test/doc tickets reference expected class/DTO/exception names (e.g. `SubmitDisputeCommand`, `DisputeCreatedResponse`, `IEventPublisher`) and seed credentials that don't exist yet — the source is only SPEC.md + scaffold. Reconcile once TDP-DISP-01 / TDP-DATA-02 are implemented. | Update the test/doc tickets to match the actual implemented names. |
 
+### Resolutions
+
+- **Flag 2 (low-confidence AI fields):** resolved as **(a) show-and-flag** during the Batch 6
+  frontend build. FE-03 shows the AI's best guess with an amber ring + "please confirm" helper
+  text and `aria-describedby`; editing a flagged field clears the flag. The `CONFIDENCE_THRESHOLD`
+  (0.6) is centralised in `src/features/disputes/types.ts`, so switching to strict blanking is a
+  one-line change if the SPEC owner later prefers option (b).
+- **Flag 3 (`CLASSIFICATION_FAILED` customer display):** resolved as **(a)** — customers see
+  "Under Review"; ops see the raw "Needs Triage" state. Implemented in `StatusBadge` via the
+  `customerView` prop.
+
 ## Ticket format
 
 Every ticket contains: **Jira summary**, then five sections — (1) Context & Motivation,
