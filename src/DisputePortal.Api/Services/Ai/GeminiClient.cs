@@ -45,27 +45,52 @@ public sealed class GeminiClient(
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(request.Timeout);
 
+        // Try the configured model first, then fall back through known free-tier flash models
+        // if the API returns 404 (model not found / not available to this key + API version).
+        AnthropicException? last = null;
+        foreach (var model in CandidateModels(request.Model))
+        {
+            var (text, notFound, error) = await TryModelAsync(model, body, timeoutCts.Token, ct);
+            if (text is not null) return text;
+            last = error;
+            if (!notFound) break; // only keep trying on 404; other errors are terminal
+            logger.LogInformation("Gemini model {Model} unavailable (404); trying next fallback.", model);
+        }
+
+        throw last ?? new AnthropicException("Gemini request failed.", transient: true);
+    }
+
+    private static IEnumerable<string> CandidateModels(string configured)
+    {
+        yield return configured;
+        foreach (var m in new[] { "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite" })
+            if (!string.Equals(m, configured, StringComparison.OrdinalIgnoreCase))
+                yield return m;
+    }
+
+    private async Task<(string? Text, bool NotFound, AnthropicException? Error)> TryModelAsync(
+        string model, object body, CancellationToken timeoutToken, CancellationToken ct)
+    {
         // Key as query param avoids header-validation failures on keys with whitespace/newlines.
         var path =
-            $"/v1beta/models/{Uri.EscapeDataString(request.Model)}:generateContent" +
+            $"v1beta/models/{Uri.EscapeDataString(model)}:generateContent" +
             $"?key={Uri.EscapeDataString(_apiKey)}";
 
         var started = Stopwatch.GetTimestamp();
         HttpResponseMessage response;
         try
         {
-            response = await http.PostAsJsonAsync(path, body, Json, timeoutCts.Token);
+            response = await http.PostAsJsonAsync(path, body, Json, timeoutToken);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            logger.LogWarning("Gemini request timed out after {TimeoutMs}ms (model {Model})",
-                request.Timeout.TotalMilliseconds, request.Model);
-            throw new AnthropicException("Gemini request timed out.", transient: true);
+            logger.LogWarning("Gemini request timed out (model {Model})", model);
+            return (null, false, new AnthropicException("Gemini request timed out.", transient: true));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "Gemini request failed at the transport layer (model {Model})", request.Model);
-            throw new AnthropicException("Gemini request failed.", transient: true, inner: ex);
+            logger.LogWarning(ex, "Gemini request failed at the transport layer (model {Model})", model);
+            return (null, false, new AnthropicException("Gemini request failed.", transient: true, inner: ex));
         }
 
         var elapsedMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
@@ -74,13 +99,14 @@ public sealed class GeminiClient(
         {
             if (!response.IsSuccessStatusCode)
             {
+                var notFound = response.StatusCode == HttpStatusCode.NotFound;
                 var transient = response.StatusCode == HttpStatusCode.TooManyRequests
                                 || (int)response.StatusCode >= 500;
                 logger.LogWarning(
                     "Gemini returned {StatusCode} for model {Model} in {ElapsedMs:0}ms (transient={Transient})",
-                    (int)response.StatusCode, request.Model, elapsedMs, transient);
-                throw new AnthropicException(
-                    $"Gemini responded with status {(int)response.StatusCode}.", transient);
+                    (int)response.StatusCode, model, elapsedMs, transient);
+                return (null, notFound,
+                    new AnthropicException($"Gemini responded with status {(int)response.StatusCode}.", transient));
             }
 
             GenerateContentResponse? parsed;
@@ -90,8 +116,8 @@ public sealed class GeminiClient(
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.LogWarning(ex, "Gemini response envelope was not valid JSON (model {Model})", request.Model);
-                throw new AnthropicException("Gemini response could not be parsed.", inner: ex);
+                logger.LogWarning(ex, "Gemini response envelope was not valid JSON (model {Model})", model);
+                return (null, false, new AnthropicException("Gemini response could not be parsed.", inner: ex));
             }
 
             var text = parsed?.Candidates?
@@ -104,18 +130,18 @@ public sealed class GeminiClient(
                 var block = parsed?.PromptFeedback?.BlockReason;
                 logger.LogWarning(
                     "Gemini response contained no text (model {Model}, blockReason {BlockReason})",
-                    request.Model, block ?? "-");
-                throw new AnthropicException(
+                    model, block ?? "-");
+                return (null, false, new AnthropicException(
                     string.IsNullOrEmpty(block)
                         ? "Gemini response contained no text."
-                        : $"Gemini blocked the prompt ({block}).");
+                        : $"Gemini blocked the prompt ({block})."));
             }
 
             logger.LogInformation(
                 "Gemini completion succeeded (ai.model {Model}, ai.durationMs {ElapsedMs:0})",
-                request.Model, elapsedMs);
+                model, elapsedMs);
 
-            return text.Trim();
+            return (text.Trim(), false, null);
         }
     }
 
