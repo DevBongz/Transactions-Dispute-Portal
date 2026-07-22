@@ -25,6 +25,9 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      # cp-zookeeper 7.6.0 disables 4-letter-word commands by default; the healthcheck
+      # below uses `ruok`, so it must be whitelisted or the kafka/api gate never opens.
+      ZOOKEEPER_4LW_COMMANDS_WHITELIST: "ruok,srvr"
     ports:
       - "2181:2181"
     healthcheck:

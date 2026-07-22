@@ -6,8 +6,8 @@ namespace DisputePortal.Api.Observability;
 
 /// <summary>
 /// Liveness / readiness health checks (TDP-OBS-01 §2.6). Readiness covers Postgres
-/// (real Npgsql connectivity check) and Kafka. The Kafka check is a lightweight
-/// placeholder pending the Kafka producer (TDP-KAFKA-01) — see <see cref="KafkaSelfCheck"/>.
+/// (real Npgsql connectivity check) and Kafka (real broker-metadata probe, see
+/// <see cref="KafkaHealthCheck"/>, added with the producer in TDP-KAFKA-01).
 /// All endpoints are public (no JWT) so probes work without auth.
 /// </summary>
 public static class HealthChecksConfiguration
@@ -19,7 +19,7 @@ public static class HealthChecksConfiguration
                 builder.Configuration.GetConnectionString("Default")!,
                 name: "postgres",
                 tags: new[] { "ready" })
-            .AddCheck<KafkaSelfCheck>(
+            .AddCheck<KafkaHealthCheck>(
                 "kafka",
                 failureStatus: HealthStatus.Degraded,
                 tags: new[] { "ready" });
@@ -65,19 +65,4 @@ public static class HealthChecksConfiguration
         await ctx.Response.WriteAsync(JsonSerializer.Serialize(payload,
             new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
     }
-}
-
-/// <summary>
-/// Placeholder Kafka readiness check. The real broker-metadata probe belongs with
-/// the Kafka producer in TDP-KAFKA-01; until that lands this reports Healthy so
-/// readiness reflects the components actually wired in this batch (Postgres).
-/// Swap for <c>AspNetCore.HealthChecks.Kafka</c>'s <c>AddKafka(...)</c> when the
-/// producer config is available. (TDP-OBS-01 §2.6, deviation noted in batch report.)
-/// </summary>
-public sealed class KafkaSelfCheck : IHealthCheck
-{
-    public Task<HealthCheckResult> CheckHealthAsync(
-        HealthCheckContext context, CancellationToken cancellationToken = default) =>
-        Task.FromResult(HealthCheckResult.Healthy(
-            "Kafka connectivity check is a placeholder pending TDP-KAFKA-01."));
 }

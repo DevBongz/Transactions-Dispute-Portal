@@ -2,7 +2,10 @@ using System.Text;
 using DisputePortal.Api.Data;
 using DisputePortal.Api.Domain;
 using DisputePortal.Api.Infrastructure.Auth;
+using DisputePortal.Api.Messaging;
 using DisputePortal.Api.Observability;
+using DisputePortal.Api.Repositories;
+using DisputePortal.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -90,8 +93,19 @@ try
         p.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod()));
 
     // ---- Observability (TDP-OBS-01) ----
-    builder.Services.AddScoped<ICorrelationAccessor, HttpCorrelationAccessor>();
+    // Singleton so the singleton Kafka publisher can stamp the correlation id
+    // (TDP-KAFKA-01): the accessor is a stateless wrapper over IHttpContextAccessor
+    // (itself a singleton reading the per-request AsyncLocal context), so promoting
+    // it from scoped is safe and avoids a captive-dependency at the publisher.
+    builder.Services.AddSingleton<ICorrelationAccessor, HttpCorrelationAccessor>();
     builder.AddAppHealthChecks();
+
+    // ---- Messaging: Kafka producer + domain events (TDP-KAFKA-01) ----
+    builder.Services.AddKafkaProducer(builder.Configuration);
+
+    // ---- Transactions (TDP-TXN-01): Controller -> Service -> Repository -> EF Core ----
+    builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+    builder.Services.AddScoped<ITransactionService, TransactionService>();
 
     var app = builder.Build();
 
