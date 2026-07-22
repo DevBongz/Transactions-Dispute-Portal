@@ -76,6 +76,8 @@ Optional AI overrides (set on `dp-api` if your account can't call the defaults):
 
 ## Troubleshooting
 
+- **Blueprint error `services[0].image … could not be fetched`:** the Redpanda image must come
+  from Docker Hub (`docker.io/redpandadata/redpanda:…`). Do not use `docker.redpanda.com`.
 - **API unhealthy / DB errors:** confirm `dp-postgres` is in the **same region** (`oregon`) as
   `dp-api`; the connection string is wired automatically via the Blueprint.
 - **Disputes fail on submit/resolve (500):** the API can't reach Kafka. Check `dp-redpanda` is

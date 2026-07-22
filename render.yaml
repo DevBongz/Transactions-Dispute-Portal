@@ -21,7 +21,8 @@ services:
     plan: starter # bump to standard if it OOMs on 512 MB
     region: oregon
     image:
-      url: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+      # Use Docker Hub — Render cannot fetch from docker.redpanda.com during Blueprint validation.
+      url: docker.io/redpandadata/redpanda:v24.2.7
     # Advertise the private hostname so API clients connect to dp-redpanda:9092.
     dockerCommand: >-
       redpanda start --mode dev-container --smp 1 --memory 512M --reserve-memory 0M
