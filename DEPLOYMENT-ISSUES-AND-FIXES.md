@@ -218,6 +218,50 @@ Set `Cors__AllowedOrigins__0` to the exact SPA origin (`https://dp-ui-5rd4.onren
 
 ---
 
+### Issue 9 — AI extract returned 500 (ASP.NET record validation)
+
+**Symptom**  
+`POST /api/v1/ai/extract-dispute` returned **500** with:
+```text
+InvalidOperationException: Record type 'ExtractDisputeRequest' has validation
+metadata defined on property 'Text' that will be ignored.
+```
+
+**Root cause**  
+Validation attributes were placed with `[property: Required]` on C# primary-constructor record parameters. ASP.NET Core ignores that for model validation and throws at runtime.
+
+**Solution**  
+Put attributes directly on the constructor parameters (`[Required] string Text`, etc.) on AI and dispute request DTOs.
+
+**Interview angle:** “Framework-specific pitfall: record primary constructors + DataAnnotations need the attribute on the parameter, not `[property:]`, or the endpoint blows up before business logic runs.”
+
+---
+
+### Issue 10 — Gemini returned 404 for `gemini-2.5-flash` (extract → 502)
+
+**Symptom**  
+After the key was configured, extract still failed:
+```text
+Gemini returned 404 for model gemini-2.5-flash … (transient=false)
+HTTP POST /api/v1/ai/extract-dispute → 502
+```
+
+**Root cause**  
+The free-tier API key / `v1beta` combo did not resolve the configured model id (`gemini-2.5-flash`) — Google returned **404 Not Found** for that model path. Middleware correctly mapped the LLM failure to **502** (not a crash).
+
+**Solution**  
+Hardened `GeminiClient` to, on **404**, fall through free-tier flash aliases until one succeeds:
+1. configured model (`Gemini:ExtractionModel` / classification / summary)
+2. `gemini-flash-latest`
+3. `gemini-2.5-flash`
+4. `gemini-2.5-flash-lite`
+
+Also send the API key as `?key=` on the request (avoids header quirks) and keep timeouts generous for free-tier latency.
+
+**Interview angle:** “Don’t hard-bind a single model string in production. Treat model availability as an infra concern — fallback on 404, fail closed with 502, keep submit/classification paths resilient.”
+
+---
+
 ## 3. Timeline of health recovery
 
 1. Blueprint created → Redpanda image fetch failed → Docker Hub image.  
@@ -227,7 +271,9 @@ Set `Cors__AllowedOrigins__0` to the exact SPA origin (`https://dp-ui-5rd4.onren
 5. Postgres health 503 → normalize connection string in health checks.  
 6. Kafka topics / broker → Redpanda Live + longer topic ensure + API redeploy.  
 7. Cross-URL suffixes → fix CORS + `VITE_API_BASE_URL`.  
-8. Login fails in browser → CORS origin fix → **login success**.
+8. Login fails in browser → CORS origin fix → **login success**.  
+9. AI extract 500 → fix DataAnnotations on record DTOs.  
+10. Gemini model 404 → free-tier flash fallback chain → **extract success**.
 
 **Verified healthy response:**
 ```json
@@ -260,10 +306,10 @@ Set `Cors__AllowedOrigins__0` to the exact SPA origin (`https://dp-ui-5rd4.onren
 1. **Full-fidelity cloud demo** — kept Kafka/async classification, not a stripped sync-only demo.  
 2. **IaC with Blueprints** — `render.yaml` as source of truth; still verified live hostnames.  
 3. **Provider swap under pressure** — Gemini vs Anthropic without rewriting domain services.  
-4. **Debugging method** — logs → isolate layer (image registry / CLI / memory / connection string / CORS) → smallest fix → redeploy.  
+4. **Debugging method** — logs → isolate layer (image registry / CLI / memory / connection string / CORS / model id) → smallest fix → redeploy.  
 5. **Security hygiene** — LLM key server-side only; CORS allow-list; JWT auth; seed passwords never logged.  
 6. **Graceful degradation** — classification consumer retries; AI failures map to 502 / `CLASSIFICATION_FAILED` rather than crashing submit.  
-7. **Honest trade-offs** — Starter memory limits, free Gemini rate limits, Render name suffixes, paid private services for Kafka.
+7. **Honest trade-offs** — Starter memory limits, free Gemini rate limits / model alias quirks, Render name suffixes, paid private services for Kafka.
 
 ---
 
@@ -288,7 +334,8 @@ Set `Cors__AllowedOrigins__0` to the exact SPA origin (`https://dp-ui-5rd4.onren
 - `render.yaml` — Blueprint definition  
 - `SPEC.md` — product/architecture specification  
 - `batch-planning.md` — delivery batches  
+- `DEMO-SCRIPT.md` — live walkthrough script  
 
 ---
 
-*Last updated: 22 July 2026 — after successful login on the live Render deployment.*
+*Last updated: 22 July 2026 — after Gemini model-fallback fix and successful NL extract on Render.*

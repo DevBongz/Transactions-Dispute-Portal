@@ -12,13 +12,19 @@ const events: DisputeEvent[] = [
 describe("DisputeTimeline", () => {
   it("renders events in chronological order (oldest first) regardless of input order", () => {
     render(<DisputeTimeline events={events} />);
-    const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(headings).toEqual(["Dispute submitted", "Under review", "Resolved"]);
+    const order = screen.getAllByTestId("timeline-item").map((el) => el.getAttribute("data-event-type"));
+    expect(order).toEqual(["SUBMITTED", "UNDER_REVIEW", "RESOLVED"]);
   });
 
   it("renders a semantic ordered list with a time element per event", () => {
     render(<DisputeTimeline events={events} />);
     expect(screen.getByRole("list", { name: /dispute timeline/i })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
+  });
+
+  it("renders a human-readable description for each event", () => {
+    render(<DisputeTimeline events={events} />);
+    expect(screen.getByText(/raised/i)).toBeInTheDocument();
+    expect(screen.getByText(/closed/i)).toBeInTheDocument();
   });
 });

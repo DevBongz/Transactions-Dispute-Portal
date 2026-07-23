@@ -32,10 +32,20 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddHttpContextAccessor();
 
-    // Swagger with a Bearer security definition so protected endpoints can be
-    // exercised from the Swagger UI with a pasted token (TDP-AUTH-01 §4).
+    // Swagger + JWT Authorize button + XML action summaries (TDP-DOC-01).
     builder.Services.AddSwaggerGen(o =>
     {
+        o.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "Transactions Dispute Portal API",
+            Version = "v1",
+            Description =
+                "Customer & operations dispute management over the DMC Fin-Motion journal/settlement layer. " +
+                "Customers view transactions, raise and track disputes; ops staff triage and resolve them. " +
+                "AI features: NL dispute extraction, auto-classification, and resolution summaries (Google Gemini).",
+            Contact = new OpenApiContact { Name = "Bongani Duma" }
+        });
+
         var scheme = new OpenApiSecurityScheme
         {
             Name = "Authorization",
@@ -48,6 +58,12 @@ try
         };
         o.AddSecurityDefinition("Bearer", scheme);
         o.AddSecurityRequirement(new OpenApiSecurityRequirement { [scheme] = Array.Empty<string>() });
+
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml");
+        if (File.Exists(xmlPath))
+            o.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
+        o.SupportNonNullableReferenceTypes();
     });
 
     // EF Core / Npgsql — connection string injected by compose (SPEC §3.1). Normalised so a
@@ -79,7 +95,9 @@ try
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret)),
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(30)   // tight skew so 60-min expiry is honoured
+                // Zero skew keeps expiry deterministic for auth tests (TDP-TEST-01) and
+                // honours the 60-minute token lifetime tightly in production.
+                ClockSkew = TimeSpan.Zero
             };
         });
 
@@ -146,11 +164,18 @@ try
 
     var app = builder.Build();
 
-    // Swagger is enabled in Development and Docker environments (SPEC §3.6 Documentation).
+    // Swagger in Development + Docker (SPEC §3.6). Not enabled in Production-by-name
+    // cloud hosts unless ASPNETCORE_ENVIRONMENT=Docker (Render compose-style demos).
     if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
     {
         app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwaggerUI(ui =>
+        {
+            ui.SwaggerEndpoint("/swagger/v1/swagger.json", "Dispute Portal API v1");
+            ui.RoutePrefix = "swagger";
+            ui.DocumentTitle = "Transactions Dispute Portal API";
+            ui.DisplayRequestDuration();
+        });
     }
 
     // Run migrations + seed inside a scope, before serving traffic (TDP-DATA-02 §2.3).

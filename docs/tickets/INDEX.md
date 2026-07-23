@@ -82,6 +82,7 @@ Intended to be sorted out separately (e.g. with another LLM or the team).
 
 ### Resolutions
 
+- **Flag 1 (Kafka dual listeners):** resolved as **(a)** — keep dual listeners (`PLAINTEXT://kafka:29092` in-container, `PLAINTEXT_HOST://localhost:9092` on the host). Documented in the root README troubleshooting section. SPEC §3.1 remains the conceptual single-broker view; Compose implements the dual-listener practicality.
 - **Flag 2 (low-confidence AI fields):** resolved as **(a) show-and-flag** during the Batch 6
   frontend build. FE-03 shows the AI's best guess with an amber ring + "please confirm" helper
   text and `aria-describedby`; editing a flagged field clears the flag. The `CONFIDENCE_THRESHOLD`
@@ -90,6 +91,10 @@ Intended to be sorted out separately (e.g. with another LLM or the team).
 - **Flag 3 (`CLASSIFICATION_FAILED` customer display):** resolved as **(a)** — customers see
   "Under Review"; ops see the raw "Needs Triage" state. Implemented in `StatusBadge` via the
   `customerView` prop.
+- **Flag 4 (placeholder names):** resolved — implementation uses `SubmitDisputeRequest` /
+  `SubmitDisputeResponse`, `IEventPublisher`, `IAnthropicClient` (Gemini-backed), seed emails
+  `maya@example.com` / `sipho@capitec.ops` / `zanele@capitec.ops`. README and integration tests
+  match those names.
 
 ## Ticket format
 

@@ -26,8 +26,10 @@ The batches
 │                           │                                    │                                                   │ (APIs)          │           │
 ├───────────────────────────┼────────────────────────────────────┼───────────────────────────────────────────────────┼─────────────────┼───────────┤
 │ B7 — Quality & delivery   │ DOC-01, TEST-01, TEST-02, DOC-02,  │ Swagger, tests, README, CI                        │ everything      │ Large     │
-│                           │ CICD-01                            │                                                   │                 │           │
+│                           │ CICD-01                            │ **DONE** (Jul 23)                                  │                 │           │
 └───────────────────────────┴────────────────────────────────────┴───────────────────────────────────────────────────┴─────────────────┴───────────┘
+
+**Status:** Batches B1–B7 complete. Remaining polish is optional (manual QA checklist on a fresh Compose boot; first green Actions run after push).
 
 Execution order & parallelism
 

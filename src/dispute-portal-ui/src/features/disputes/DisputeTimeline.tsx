@@ -24,7 +24,12 @@ export function DisputeTimeline({ events }: { events: DisputeEvent[] }) {
   return (
     <ol className="relative ml-2 border-l pl-6" aria-label="Dispute timeline">
       {ordered.map((e, i) => (
-        <li key={`${e.eventType}-${e.createdAt}-${i}`} className="relative mb-6 last:mb-0">
+        <li
+          key={`${e.eventType}-${e.createdAt}-${i}`}
+          className="relative mb-6 last:mb-0"
+          data-testid="timeline-item"
+          data-event-type={e.eventType}
+        >
           <span className="absolute -left-[1.9rem] top-1 h-3 w-3 rounded-full bg-primary" aria-hidden />
           <h3 className="font-medium">{EVENT_LABEL[e.eventType] ?? e.eventType}</h3>
           <time dateTime={e.createdAt} className="text-sm text-muted-foreground">
