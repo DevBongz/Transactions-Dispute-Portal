@@ -1,9 +1,11 @@
 import { setupServer } from "msw/node";
 import { http, HttpResponse } from "msw";
 
-/** Default handlers for the four high-value UI flows (TDP-TEST-02). */
+// Match extract/summary/submit regardless of host or /api/v1 prefix.
+// A machine-local .env (e.g. Render VITE_API_BASE_URL) can change the absolute URL;
+// narrow path-prefix patterns then miss and the mutation shows the extract error UI.
 export const handlers = [
-  http.post("*/api/v1/ai/extract-dispute", () =>
+  http.post(/\/ai\/extract-dispute\/?$/, () =>
     HttpResponse.json({
       transactionRef: null,
       merchantName: "Shoprite",
@@ -19,12 +21,12 @@ export const handlers = [
       },
     }),
   ),
-  http.post("*/api/v1/ai/generate-summary", () =>
+  http.post(/\/ai\/generate-summary\/?$/, () =>
     HttpResponse.json({
       summary: "We reviewed your dispute and refunded the duplicate R450 charge from Shoprite.",
     }),
   ),
-  http.post("*/api/v1/disputes", () =>
+  http.post(/\/disputes\/?$/, () =>
     HttpResponse.json(
       { id: "d1", reference: "DSP-20260714-00042", status: "OPEN" },
       { status: 201 },

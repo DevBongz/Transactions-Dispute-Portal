@@ -17,5 +17,9 @@ export default defineConfig({
     globals: true,
     setupFiles: "./src/test/setup.ts",
     css: false,
+    // Hermetic API base — ignore any machine-local `.env` VITE_API_BASE_URL during tests.
+    env: {
+      VITE_API_BASE_URL: "/api/v1",
+    },
   },
 });
