@@ -44,7 +44,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
           <img
-            src="/brand/capitec-bank-vector-logo.jpg"
+            src="/brand/capitec-bank-removed-background.png"
             alt="Capitec Bank"
             className="h-auto w-[min(100%,18rem)] object-contain sm:w-[20rem]"
           />
