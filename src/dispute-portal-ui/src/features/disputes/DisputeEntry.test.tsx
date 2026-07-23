@@ -1,9 +1,18 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test/test-utils";
+import { api } from "@/lib/api-client";
 import { DisputeEntry } from "./DisputeEntry";
 import type { Transaction } from "@/types/api";
+
+// Mock at the axios boundary — MSW + Axios is environment-sensitive (jsdom origin,
+// local VITE_API_BASE_URL). OpsResolveModal tests use the same approach.
+vi.mock("@/lib/api-client", () => ({
+  api: { post: vi.fn(), patch: vi.fn(), get: vi.fn() },
+}));
+
+const mockedPost = vi.mocked(api.post);
 
 const txn: Transaction = {
   id: "txn-1",
@@ -16,7 +25,27 @@ const txn: Transaction = {
   status: "SETTLED",
 };
 
+const extractPayload = {
+  transactionRef: null,
+  merchantName: "Shoprite",
+  amount: 450,
+  category: "DUPLICATE_CHARGE",
+  transactionDate: "2026-07-14",
+  confidence: {
+    transactionRef: 0,
+    merchantName: 0.95,
+    amount: 0.9,
+    category: 0.88,
+    transactionDate: 0.9,
+  },
+};
+
 describe("DisputeEntry (DisputeForm)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedPost.mockResolvedValue({ data: extractPayload } as never);
+  });
+
   it("renders both the structured form and natural-language tabs", () => {
     renderWithProviders(<DisputeEntry transaction={txn} onSubmitted={() => {}} />);
     expect(screen.getByRole("tab", { name: /own words/i })).toBeInTheDocument();
@@ -33,6 +62,13 @@ describe("DisputeEntry (DisputeForm)", () => {
       "I was charged R450 twice at Shoprite on 14 July but I only shopped once.",
     );
     await user.click(screen.getByRole("button", { name: /extract details/i }));
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith(
+        "/ai/extract-dispute",
+        expect.objectContaining({ text: expect.stringContaining("Shoprite") }),
+      ),
+    );
 
     await waitFor(() => expect(screen.getByLabelText(/merchant/i)).toHaveValue("Shoprite"));
     expect(screen.getByLabelText(/^amount/i)).toHaveValue("450");
