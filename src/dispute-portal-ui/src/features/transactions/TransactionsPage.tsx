@@ -35,7 +35,7 @@ export function Component() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Transactions</h1>
+      <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Transactions</h1>
       <TransactionFilters value={filters} onChange={(next) => setSp(toParams(next))} />
 
       <Card>

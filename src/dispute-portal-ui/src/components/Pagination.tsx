@@ -19,26 +19,28 @@ export function Pagination({
   const to = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex items-center justify-between gap-4 pt-4">
+    <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {total === 0 ? "No results" : `Showing ${from}–${to} of ${total}`}
         {isFetching && " · updating…"}
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 sm:justify-end">
         <Button
           variant="outline"
           size="sm"
+          className="flex-1 sm:flex-none"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
         >
           Previous
         </Button>
-        <span className="text-sm" aria-current="page">
+        <span className="shrink-0 text-sm" aria-current="page">
           Page {page} of {totalPages}
         </span>
         <Button
           variant="outline"
           size="sm"
+          className="flex-1 sm:flex-none"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
         >

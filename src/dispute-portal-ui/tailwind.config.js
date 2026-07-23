@@ -3,7 +3,15 @@ export default {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
-    container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: "1rem",
+        sm: "1.5rem",
+        lg: "2rem",
+      },
+      screens: { "2xl": "1400px" },
+    },
     extend: {
       colors: {
         border: "hsl(var(--border))",
@@ -18,11 +26,20 @@ export default {
         accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+        brand: {
+          red: "hsl(var(--brand-red))",
+          blue: "hsl(var(--brand-blue))",
+          gem: "hsl(var(--brand-gem))",
+          neutral: "hsl(var(--brand-neutral))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        brand: "0 18px 50px -24px hsl(var(--brand-blue) / 0.35), 0 10px 28px -18px hsl(var(--brand-red) / 0.25)",
       },
     },
   },

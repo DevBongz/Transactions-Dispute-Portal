@@ -33,7 +33,7 @@ export function DashboardMetrics() {
   if (isError) return <ErrorState onRetry={refetch} message="Couldn't load dashboard metrics." />;
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard title="Total open">
         {isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-3xl font-semibold">{data!.totalOpen}</p>}
       </StatCard>

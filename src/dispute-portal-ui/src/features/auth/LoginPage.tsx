@@ -38,48 +38,75 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>Transactions Dispute Portal</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} aria-describedby={error ? "login-error" : undefined} noValidate>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="username"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+    <div className="login-atmosphere relative flex min-h-svh items-center justify-center overflow-hidden px-4 py-8 sm:px-6">
+      <div className="login-motif" aria-hidden="true" />
+
+      <div className="relative z-10 w-full max-w-md">
+        <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
+          <img
+            src="/brand/capitec-bank-vector-logo.jpg"
+            alt="Capitec Bank"
+            className="h-auto w-[min(100%,18rem)] object-contain sm:w-[20rem]"
+          />
+          <p className="mt-4 max-w-xs text-sm text-muted-foreground sm:text-base">
+            Transactions Dispute Portal
+          </p>
+        </div>
+
+        <Card className="border-border/80 shadow-brand backdrop-blur-sm">
+          <CardHeader className="space-y-1 pb-4">
+            <div className="mb-1 flex h-1 w-12 overflow-hidden rounded-full" aria-hidden="true">
+              <span className="w-1/2 bg-brand-blue" />
+              <span className="w-1/2 bg-brand-red" />
             </div>
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {error && (
-              <p id="login-error" role="alert" className="mt-4 text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <Button type="submit" className="mt-6 w-full" disabled={mutation.isPending} aria-busy={mutation.isPending}>
-              {mutation.isPending && <Spinner />}
-              {mutation.isPending ? "Signing in…" : "Sign in"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <CardTitle className="text-xl sm:text-2xl">Sign in</CardTitle>
+            <CardDescription>Use your portal credentials to continue</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} aria-describedby={error ? "login-error" : undefined} noValidate>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="username"
+                  required
+                  inputMode="email"
+                  className="h-11"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="h-11"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {error && (
+                <p id="login-error" role="alert" className="mt-4 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="mt-6 h-11 w-full text-base"
+                disabled={mutation.isPending}
+                aria-busy={mutation.isPending}
+              >
+                {mutation.isPending && <Spinner />}
+                {mutation.isPending ? "Signing in…" : "Sign in"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

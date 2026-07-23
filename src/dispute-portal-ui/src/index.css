@@ -2,29 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* shadcn/ui "new-york" / slate token set (SPEC §3.1 shadcn/ui). */
+/*
+  Capitec-inspired token set (capitec-color-scheme.md):
+  Red #E51718 · Blue #2F70EF · Accent Gem #4111A4 · Neutral #3A3A3A
+*/
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 40% 98%;
+    --foreground: 0 0% 23%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 23%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 0 0% 23%;
+
+    /* Capitec Red — primary CTAs */
+    --primary: 0 82% 49%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft blue wash */
+    --secondary: 220 70% 95%;
+    --secondary-foreground: 220 60% 30%;
+
+    --muted: 220 30% 95%;
+    --muted-foreground: 220 10% 42%;
+
+    /* Capitec Blue tint for hover/selection */
+    --accent: 220 80% 95%;
+    --accent-foreground: 220 70% 28%;
+
+    --destructive: 0 82% 49%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 25% 88%;
+    --input: 220 25% 88%;
+    /* Capitec Blue focus ring */
+    --ring: 220 86% 56%;
+
+    --radius: 0.625rem;
+
+    /* Raw brand accents for decorative use */
+    --brand-red: 0 82% 49%;
+    --brand-blue: 220 86% 56%;
+    --brand-gem: 260 81% 36%;
+    --brand-neutral: 0 0% 23%;
   }
 
   * {
@@ -59,4 +81,69 @@
 .skip-link:focus {
   left: 0.5rem;
   top: 0.5rem;
+}
+
+/* Login atmosphere — interlocking red/blue motif inspired by the Capitec mark */
+.login-atmosphere {
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, hsl(var(--brand-blue) / 0.18), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 80%, hsl(var(--brand-red) / 0.14), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 70% 10%, hsl(var(--brand-gem) / 0.08), transparent 45%),
+    linear-gradient(165deg, hsl(220 50% 97%) 0%, hsl(0 0% 100%) 45%, hsl(220 40% 96%) 100%);
+}
+
+.login-motif {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.login-motif::before,
+.login-motif::after {
+  content: "";
+  position: absolute;
+  width: min(48vw, 28rem);
+  height: min(22vw, 12rem);
+  border-radius: 9999px;
+  opacity: 0.16;
+}
+
+.login-motif::before {
+  top: 8%;
+  left: -6%;
+  background: linear-gradient(135deg, hsl(var(--brand-blue)), hsl(var(--brand-gem)));
+  animation: motif-drift-a 14s ease-in-out infinite alternate;
+}
+
+.login-motif::after {
+  bottom: 10%;
+  right: -8%;
+  background: linear-gradient(135deg, hsl(var(--brand-red)), hsl(0 82% 40%));
+  animation: motif-drift-b 16s ease-in-out infinite alternate;
+}
+
+@keyframes motif-drift-a {
+  from {
+    transform: translateY(0) rotate(-18deg);
+  }
+  to {
+    transform: translateY(-1.25rem) rotate(-14deg);
+  }
+}
+
+@keyframes motif-drift-b {
+  from {
+    transform: translateY(0) rotate(16deg);
+  }
+  to {
+    transform: translateY(-1rem) rotate(20deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-motif::before,
+  .login-motif::after {
+    animation: none;
+  }
 }

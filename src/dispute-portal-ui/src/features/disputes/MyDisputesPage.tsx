@@ -39,14 +39,14 @@ export function Component() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">My Disputes</h1>
+      <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">My Disputes</h1>
 
-      <div className="flex items-end gap-4 rounded-lg border p-4">
-        <div className="space-y-2">
+      <div className="flex flex-col gap-4 rounded-lg border border-border/80 bg-card p-4 sm:flex-row sm:items-end">
+        <div className="w-full space-y-2 sm:w-auto">
           <Label htmlFor="status">Status</Label>
           <Select
             id="status"
-            className="w-[12rem]"
+            className="w-full sm:w-[12rem]"
             value={filters.status ?? ""}
             onChange={(e) => setParams({ page: 1, status: (e.target.value || undefined) as DisputeStatus | undefined })}
           >

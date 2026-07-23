@@ -49,16 +49,16 @@ export function Component() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Operations</h1>
+      <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Operations</h1>
 
       <DashboardMetrics />
 
-      <div className="flex flex-wrap items-end gap-4 rounded-lg border p-4">
+      <div className="grid grid-cols-1 gap-4 rounded-lg border border-border/80 bg-card p-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="f-status">Status</Label>
           <Select
             id="f-status"
-            className="w-[12rem]"
+            className="w-full"
             value={filters.status ?? ""}
             onChange={(e) => setParams({ page: 1, status: (e.target.value || undefined) as DisputeStatus | undefined })}
           >
@@ -73,7 +73,7 @@ export function Component() {
           <Label htmlFor="f-priority">Priority</Label>
           <Select
             id="f-priority"
-            className="w-[10rem]"
+            className="w-full"
             value={filters.priority ?? ""}
             onChange={(e) => setParams({ page: 1, priority: (e.target.value || undefined) as Priority | undefined })}
           >
@@ -85,11 +85,11 @@ export function Component() {
             ))}
           </Select>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 sm:col-span-2 lg:col-span-1">
           <Label htmlFor="f-category">Category</Label>
           <Select
             id="f-category"
-            className="w-[14rem]"
+            className="w-full"
             value={filters.category ?? ""}
             onChange={(e) => setParams({ page: 1, category: (e.target.value || undefined) as DisputeCategory | undefined })}
           >

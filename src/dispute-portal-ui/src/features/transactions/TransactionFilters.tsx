@@ -29,41 +29,44 @@ export function TransactionFilters({
   }, [merchant]);
 
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-lg border p-4">
-      <div className="space-y-2">
-        <Label htmlFor="from">From</Label>
-        <Input
-          id="from"
-          type="date"
-          className="w-[10rem]"
-          value={value.from ?? ""}
-          onChange={(e) => onChange({ ...value, page: 1, from: e.target.value || undefined })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="to">To</Label>
-        <Input
-          id="to"
-          type="date"
-          className="w-[10rem]"
-          value={value.to ?? ""}
-          onChange={(e) => onChange({ ...value, page: 1, to: e.target.value || undefined })}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="merchant">Merchant</Label>
-        <Input
-          id="merchant"
-          type="search"
-          placeholder="Search merchant…"
-          className="w-[14rem]"
-          value={merchant}
-          onChange={(e) => setMerchant(e.target.value)}
-        />
+    <div className="flex flex-col gap-4 rounded-lg border border-border/80 bg-card p-4 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="grid grid-cols-1 gap-4 sm:contents">
+        <div className="space-y-2 sm:w-auto">
+          <Label htmlFor="from">From</Label>
+          <Input
+            id="from"
+            type="date"
+            className="w-full sm:w-[10rem]"
+            value={value.from ?? ""}
+            onChange={(e) => onChange({ ...value, page: 1, from: e.target.value || undefined })}
+          />
+        </div>
+        <div className="space-y-2 sm:w-auto">
+          <Label htmlFor="to">To</Label>
+          <Input
+            id="to"
+            type="date"
+            className="w-full sm:w-[10rem]"
+            value={value.to ?? ""}
+            onChange={(e) => onChange({ ...value, page: 1, to: e.target.value || undefined })}
+          />
+        </div>
+        <div className="space-y-2 sm:min-w-[14rem] sm:flex-1">
+          <Label htmlFor="merchant">Merchant</Label>
+          <Input
+            id="merchant"
+            type="search"
+            placeholder="Search merchant…"
+            className="w-full"
+            value={merchant}
+            onChange={(e) => setMerchant(e.target.value)}
+          />
+        </div>
       </div>
       {(value.from || value.to || value.merchant) && (
         <Button
           variant="ghost"
+          className="w-full sm:w-auto"
           onClick={() => {
             setMerchant("");
             onChange({ page: 1, pageSize: value.pageSize });
