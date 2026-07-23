@@ -41,8 +41,9 @@ jobs:
           --logger "trx;LogFileName=test-results.trx"
           --results-directory ./TestResults
         env:
+          # Must match DisputePortalApiFactory.JwtSecret — otherwise minted JWTs fail validation (401).
           Gemini__ApiKey: test-key
-          Jwt__Secret: ci-only-secret-value-at-least-32-characters-long
+          Jwt__Secret: test-secret-that-is-at-least-32-bytes-long!!
 
       - name: Upload backend test results
         if: always()

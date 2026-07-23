@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -63,19 +62,16 @@ public sealed class DisputePortalApiFactory : WebApplicationFactory<Program>, IA
             throw new InvalidOperationException("PostgreSQL container was not started (InitializeAsync).");
 
         builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, cfg) =>
-        {
-            cfg.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Default"] = _db.GetConnectionString(),
-                ["Jwt:Secret"] = JwtSecret,
-                ["Jwt:Issuer"] = JwtIssuer,
-                ["Jwt:Audience"] = JwtAudience,
-                ["Gemini:ApiKey"] = "test-key",
-                ["Kafka:BootstrapServers"] = "localhost:1",
-                ["Kafka:EnableClassificationConsumer"] = "false",
-            });
-        });
+
+        // UseSetting wins over process env (CI sets Jwt__Secret to a different value).
+        // Tokens are minted with JwtSecret below — the host must validate with the same key.
+        builder.UseSetting("ConnectionStrings:Default", _db.GetConnectionString());
+        builder.UseSetting("Jwt:Secret", JwtSecret);
+        builder.UseSetting("Jwt:Issuer", JwtIssuer);
+        builder.UseSetting("Jwt:Audience", JwtAudience);
+        builder.UseSetting("Gemini:ApiKey", "test-key");
+        builder.UseSetting("Kafka:BootstrapServers", "localhost:1");
+        builder.UseSetting("Kafka:EnableClassificationConsumer", "false");
 
         builder.ConfigureTestServices(services =>
         {
