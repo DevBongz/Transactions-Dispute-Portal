@@ -48,7 +48,7 @@ export default function LoginPage() {
             alt="Capitec Bank"
             className="h-auto w-[min(100%,18rem)] object-contain sm:w-[20rem]"
           />
-          <p className="mt-4 max-w-xs text-sm text-muted-foreground sm:text-base">
+          <p className="mt-4 text-xl font-semibold leading-none tracking-tight sm:text-2xl">
             Transactions Dispute Portal
           </p>
         </div>
