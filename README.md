@@ -204,8 +204,6 @@ tests/
 docs/tickets/                     # Jira-style development tickets
 docker-compose.yml
 render.yaml                       # Optional Render Blueprint (cloud demo)
-DEPLOY-RENDER.md
-DEMO-SCRIPT.md
 SPEC.md
 ```
 
@@ -238,5 +236,3 @@ No repository secrets are required for CI (throwaway JWT / Gemini values are inl
 
 - [`SPEC.md`](SPEC.md) — product & technical specification  
 - [`docs/tickets/`](docs/tickets/) — ticket index and DoD  
-- [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) — interview walkthrough  
-- [`DEPLOY-RENDER.md`](DEPLOY-RENDER.md) / [`DEPLOYMENT-ISSUES-AND-FIXES.md`](DEPLOYMENT-ISSUES-AND-FIXES.md) — cloud deploy notes  

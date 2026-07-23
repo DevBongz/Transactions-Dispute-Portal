@@ -26,3 +26,7 @@ appsettings.*.local.json
 
 # Tooling scratch
 .claude-flow/
+
+# Personal / local-only notes (kept on machine, not in the repo)
+DEMO-SCRIPT.md
+DEPLOYMENT-ISSUES-AND-FIXES.md
